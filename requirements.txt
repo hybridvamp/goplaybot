@@ -2,3 +2,4 @@ pyrogram
 ffmpeg-python
 pyromod
 tgcrypto
+requests
