@@ -6,7 +6,7 @@ from pyromod import listen
 
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from ffmpeg_python.converter import Converter
+from ffmpeg import Converter
 
 API_ID = int(os.environ.get('API_ID'))
 API_HASH = os.environ.get('API_HASH')
