@@ -5,7 +5,7 @@ import requests
 import logging
 
 from pyromod import listen
-from pyrogram import Client, filters, ReplyKeyboardRemove
+from pyrogram import Client, filters
 
 API_ID = int(os.environ.get('API_ID'))
 API_HASH = os.environ.get('API_HASH')
