@@ -23,7 +23,7 @@ app = Client(
 
 @app.on_message(filters.command("start"))
 async def start_command(_, message):
-    await message.reply_text("Welcome! Use /upload command to start the process.")
+    await message.reply_text("Welcome! use /upload command to start the process")
 
 @app.on_message(filters.command("upload"))
 async def download_file(_, message):
@@ -63,8 +63,13 @@ async def download_file(_, message):
 
     # Simulate file processing using ffmpeg-python
     processed_file_path = f"downloads/{filename}.mkv"
-    cmd = f'ffmpeg -i "{downloaded_file_path}" -c copy "{processed_file_path}"'
-    os.system(cmd)
+    try:
+        cmd = (
+            f'ffmpeg -i "{downloaded_file_path}" -c copy "{processed_file_path}"'
+        )
+        os.system(cmd)
+    except Exception as e:
+        log.error(f"Error during ffmpeg processing: {e}")
 
     # Sending the processed file back to the user
     if os.path.exists(processed_file_path):
@@ -73,13 +78,13 @@ async def download_file(_, message):
             document=processed_file_path,
             caption="Here is your processed file!",
         )
-        # Delete the processed file after sending
-        os.remove(processed_file_path)
     else:
-        await message.reply_text("Failed to process the file. Please try again.")
+        await message.reply_text("File processing failed!")
 
-    # Delete the downloaded file
+    # Delete downloaded files from the server directory
     os.remove(downloaded_file_path)
+    if os.path.exists(processed_file_path):
+        os.remove(processed_file_path)
 
     await message.reply_text("File processing completed successfully!")
 
@@ -97,12 +102,6 @@ async def cancelled(msg):
         return False
 
 if __name__ == "__main__":
-    # Install ffmpeg if not available
-    if not os.path.exists("/usr/bin/ffmpeg"):
-        print("Installing ffmpeg...")
-        os.system("apt-get update")
-        os.system("apt-get install ffmpeg -y")
-
     # Create a downloads directory if it doesn't exist
     if not os.path.exists("downloads"):
         os.makedirs("downloads")
