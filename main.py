@@ -22,13 +22,16 @@ app = Client(
 
 @app.on_message(filters.command("start"))
 async def start_command(_, message):
-    await message.reply_text("Welcome! Please enter the download code:")
+    await message.reply_text("Welcome! use /upload command to start the process")
 
 
 @app.on_message(filters.command("upload"))
 async def download_file(client, message):
     chat_id = message.chat.id
-    dcode = message.text.strip()
+
+    await message.reply_text("Enter the download code:")
+    dcode_msg = await client.listen(chat_id)
+    dcode = dcode_msg.text.strip()
 
     await message.reply_text("Enter the resolution (e.g., 1080p, 720p, 480p, 360p):")
     resolution_msg = await client.listen(chat_id)
