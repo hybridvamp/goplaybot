@@ -26,20 +26,20 @@ async def start_command(_, message):
 
 
 @app.on_message(filters.command("upload"))
-async def download_file(client, message):
+async def download_file(_, message):
     chat_id = message.chat.id
     user_id = str(message.from_user.id)
 
-    dcode_msg = await client.ask(user_id, "Enter the download code:", filters=filters.text)
+    dcode_msg = await app.ask(user_id, "Enter the download code:", filters=filters.text)
     dcode = dcode_msg.text
 
-    resolution_msg = await client.ask(user_id, "Enter the resolution (e.g., 1080p, 720p, 480p, 360p):", filters=filters.text)
+    resolution_msg = await app.ask(user_id, "Enter the resolution (e.g., 1080p, 720p, 480p, 360p):", filters=filters.text)
     resolution = resolution_msg.text
 
-    format_msg = await client.ask(user_id, "Enter the file format (e.g., mp4, mkv (if you need softcoded subtitles)):", filters=filters.text)
+    format_msg = await app.ask(user_id, "Enter the file format (e.g., mp4, mkv (if you need softcoded subtitles)):", filters=filters.text)
     file_format = format_msg.text
 
-    filename_msg = await client.ask(user_id, "Enter the filename:", filters=filters.text)
+    filename_msg = await app.ask(user_id, "Enter the filename:", filters=filters.text)
     filename = filename_msg.text
 
     await message.reply_text("Downloading the file... Please wait...")
@@ -61,7 +61,7 @@ async def download_file(client, message):
     os.system(cmd)
 
     # Sending the processed file back to the user
-    await client.send_document(
+    await app.send_document(
         chat_id,
         document=processed_file_path,
         caption="Here is your processed file!",
