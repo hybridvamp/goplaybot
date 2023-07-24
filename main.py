@@ -5,8 +5,6 @@ import logging
 from pyromod import listen
 
 from pyrogram import Client, filters
-from pyrogram.types import Message
-from ffmpeg import Converter
 
 API_ID = int(os.environ.get('API_ID'))
 API_HASH = os.environ.get('API_HASH')
@@ -24,12 +22,12 @@ app = Client(
 
 
 @app.on_message(filters.command("start"))
-async def start_command(_, message: Message):
+async def start_command(_, message):
     await message.reply_text("Welcome! Please enter the download code:")
 
 
 @app.on_message(filters.text & ~filters.command)
-async def download_file(client: Client, message: Message):
+async def download_file(client, message):
     chat_id = message.chat.id
     dcode = message.text.strip()
 
@@ -58,8 +56,10 @@ async def download_file(client: Client, message: Message):
 
     # Simulate file processing using ffmpeg-python
     processed_file_path = f"downloads/{filename}.mkv"
-    converter = Converter()
-    converter.convert(downloaded_file_path, processed_file_path)
+    cmd = (
+        f'ffmpeg -i "{downloaded_file_path}" -c copy "{processed_file_path}"'
+    )
+    os.system(cmd)
 
     # Sending the processed file back to the user
     await client.send_document(
