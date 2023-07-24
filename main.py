@@ -33,22 +33,22 @@ async def download_file(_, message):
     user_id = message.from_user.id
 
     dcode_msg = await app.ask(chat_id, "Enter the download code:", filters=filters.text)
-    if await cancelled(post_link_msg):
+    if await cancelled(dcode_msg):
         return
     dcode = dcode_msg.text
 
     resolution_msg = await app.ask(chat_id, "Enter the resolution (e.g., 1080p, 720p, 480p, 360p):", filters=filters.text)
-    if await cancelled(post_link_msg):
+    if await cancelled(resolution_msg):
         return
     resolution = resolution_msg.text
 
     format_msg = await app.ask(chat_id, "Enter the file format (e.g., mp4, mkv (if you need softcoded subtitles)):", filters=filters.text)
-    if await cancelled(post_link_msg):
+    if await cancelled(format_msg):
         return
     file_format = format_msg.text
 
     filename_msg = await app.ask(chat_id, "Enter the filename:", filters=filters.text)
-    if await cancelled(post_link_msg):
+    if await cancelled(filename_msg):
         return
     filename = filename_msg.text
 
