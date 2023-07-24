@@ -4,7 +4,7 @@ import os
 import requests
 import logging
 
-from pyromod import listen, ikb  # Pagination removed from import
+from pyromod import listen
 from pyrogram import Client, filters, ReplyKeyboardRemove
 
 API_ID = int(os.environ.get('API_ID'))
