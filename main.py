@@ -29,21 +29,17 @@ async def start_command(_, message):
 async def download_file(client, message):
     chat_id = message.chat.id
 
-    await message.reply_text("Enter the download code:")
-    dcode_msg = await client.listen(chat_id)
-    dcode = dcode_msg.text.strip()
+    dcode_msg = await client.ask("Enter the download code:")
+    dcode = dcode_msg.text
 
-    await message.reply_text("Enter the resolution (e.g., 1080p, 720p, 480p, 360p):")
-    resolution_msg = await client.listen(chat_id)
-    resolution = resolution_msg.text.strip()
+    resolution_msg = await client.ask("Enter the resolution (e.g., 1080p, 720p, 480p, 360p):")
+    resolution = resolution_msg.text
 
-    await message.reply_text("Enter the file format (e.g., mp4, mkv (if you need softcoded subtitles)):")
-    format_msg = await client.listen(chat_id)
-    file_format = format_msg.text.strip()
+    format_msg = await client.ask("Enter the file format (e.g., mp4, mkv (if you need softcoded subtitles)):")
+    file_format = format_msg.text
 
-    await message.reply_text("Enter the filename:")
-    filename_msg = await client.listen(chat_id)
-    filename = filename_msg.text.strip()
+    filename_msg = await client.ask("Enter the filename:")
+    filename = filename_msg.text
 
     await message.reply_text("Downloading the file... Please wait...")
 
