@@ -4,7 +4,7 @@ import os
 import requests
 import logging
 
-from pyromod import listen, Pagination, ikb
+from pyromod import listen, ikb  # Pagination removed from import
 from pyrogram import Client, filters, ReplyKeyboardRemove
 
 API_ID = int(os.environ.get('API_ID'))
@@ -29,19 +29,27 @@ async def start_command(_, message):
 
 @app.on_message(filters.command("upload"))
 async def download_file(_, message):
-    chat_id = message.chat.id
+    chat_id = str(message.from_user.id)
     user_id = message.from_user.id
 
-    dcode_msg = await app.ask(chat_id, "Enter the download code:")
+    dcode_msg = await app.ask(chat_id, "Enter the download code:", filters=filters.text)
+    if await cancelled(post_link_msg):
+        return
     dcode = dcode_msg.text
 
-    resolution_msg = await app.ask(chat_id, "Enter the resolution (e.g., 1080p, 720p, 480p, 360p):")
+    resolution_msg = await app.ask(chat_id, "Enter the resolution (e.g., 1080p, 720p, 480p, 360p):", filters=filters.text)
+    if await cancelled(post_link_msg):
+        return
     resolution = resolution_msg.text
 
-    format_msg = await app.ask(chat_id, "Enter the file format (e.g., mp4, mkv (if you need softcoded subtitles)):")
+    format_msg = await app.ask(chat_id, "Enter the file format (e.g., mp4, mkv (if you need softcoded subtitles)):", filters=filters.text)
+    if await cancelled(post_link_msg):
+        return
     file_format = format_msg.text
 
-    filename_msg = await app.ask(chat_id, "Enter the filename:")
+    filename_msg = await app.ask(chat_id, "Enter the filename:", filters=filters.text)
+    if await cancelled(post_link_msg):
+        return
     filename = filename_msg.text
 
     await message.reply_text("Downloading the file... Please wait...")
@@ -64,7 +72,7 @@ async def download_file(_, message):
 
     # Sending the processed file back to the user
     await app.send_document(
-        chat_id,
+        user_id,
         document=processed_file_path,
         caption="Here is your processed file!",
     )
@@ -73,6 +81,20 @@ async def download_file(_, message):
     os.remove(downloaded_file_path)
 
     await message.reply_text("File processing completed successfully!")
+
+
+async def cancelled(msg):
+    if "/cancel" in msg.text:
+        await msg.reply("Cancelled the Process!")
+        return True
+    elif "/restart" in msg.text:
+        await msg.reply("Restarted the Bot!")
+        return True
+    elif msg.text.startswith("/"):
+        await msg.reply("Cancelled the generation process!", quote=True)
+        return True
+    else:
+        return False
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 pyrogram
 ffmpeg-python
-pyromod
+pyromod==1.5
 tgcrypto
 requests
