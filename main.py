@@ -27,7 +27,7 @@ async def start_command(_, message):
 
 @app.on_message(filters.command("upload"))
 async def download_file(_, message):
-    chat_id = message.chat.id
+    chat_id = str(message.from_user.id)
     user_id = message.from_user.id
 
     dcode_msg = await app.ask(chat_id, "Enter the download code:", filters=filters.text)
@@ -62,7 +62,7 @@ async def download_file(_, message):
 
     # Sending the processed file back to the user
     await app.send_document(
-        chat_id,
+        user_id,
         document=processed_file_path,
         caption="Here is your processed file!",
     )
