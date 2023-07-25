@@ -8,7 +8,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN mkdir downloads
 
-RUN wine /Bin/curl.exe --version
-RUN wine /Bin/m3u8dl.exe --version
-
 CMD ["python", "main.py"]
