@@ -1,5 +1,71 @@
 # (C) HYBRID - https://github.com/hybridvamp
+import os
+import requests
+import logging
+from pyrogram import Client, filters
+from pyrogram.types import Message
+from viurr import inspect, download
 
+API_ID = int(os.environ.get('API_ID'))
+API_HASH = os.environ.get('API_HASH')
+BOT_TOKEN = os.environ.get('BOT_TOKEN')
+
+logging.basicConfig(level=logging.ERROR)
+log = logging.getLogger(__name__)
+log.setLevel(logging.ERROR) 
+
+app = Client(
+    "goplaybot",
+    api_id=API_ID,
+    api_hash=API_HASH,
+    bot_token=BOT_TOKEN
+)
+# Helper function to download video from Viu
+def download_viu_video(link: str) -> str:
+    # Extract the productId from the given link
+    product_id = link.split("/")[-1]
+
+    # Download video in 1080p quality
+    _, _, video_file, _ = download.video(product_id, quality='1080p')
+
+    return video_file
+
+
+# Handler for /start command
+@app.on_message(filters.command("start"))
+def start_command(_, message: Message):
+    message.reply_text("Hello! Send me a Viu video link and I'll download and send it back to you!")
+
+
+# Handler for any message containing a Viu video link
+@app.on_message(filters.text & filters.regex(r"https:\/\/www\.viu\.com\/.*"))
+def viu_video_link_handler(_, message: Message):
+    video_link = message.text.strip()
+
+    try:
+        video_file = download_viu_video(video_link)
+        _, video_title = os.path.split(video_file)
+
+        # Send the video file to the user
+        message.reply_video(video_file, caption=f"Here's the video: {video_title}")
+
+        # Remove the downloaded video file from the server
+        os.remove(video_file)
+    except Exception as e:
+        message.reply_text("Sorry, I couldn't download and send the video.")
+        print(e)
+
+
+# Start the bot
+if __name__ == "__main__":
+    app.run()
+
+
+
+
+
+
+"""
 import os
 import requests
 import logging
@@ -17,7 +83,7 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN')
 
 logging.basicConfig(level=logging.ERROR)
 log = logging.getLogger(__name__)
-log.setLevel(logging.ERROR)  # Setting the logging level to ERROR for detailed error messages
+log.setLevel(logging.ERROR) 
 
 app = Client(
     "goplaybot",
@@ -237,3 +303,4 @@ if __name__ == "__main__":
 
     log.info("Bot started")
     app.run()
+"""

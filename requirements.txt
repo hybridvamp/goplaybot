@@ -1,6 +1,6 @@
 pyrogram
-ffmpeg-python
+#ffmpeg-python
 pyromod==1.5
 tgcrypto
 requests
-tqdm
+#tqdm
