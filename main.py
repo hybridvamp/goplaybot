@@ -7,6 +7,7 @@ from tqdm import tqdm
 from pyromod import listen
 from pyrogram import Client, filters
 import shutil
+import ffmpeg
 
 API_ID = int(os.environ.get('API_ID'))
 API_HASH = os.environ.get('API_HASH')
