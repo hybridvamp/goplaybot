@@ -10,4 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 RUN mkdir downloads
 
+RUN chmod +x /app/Bin/curl /app/Bin/m3u8dl
+
 CMD ["python", "main.py"]
