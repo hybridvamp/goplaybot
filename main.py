@@ -3,7 +3,7 @@
 import os
 import requests
 import logging
-
+from tqdm import tqdm
 from pyromod import listen
 from pyrogram import Client, filters
 
@@ -21,6 +21,8 @@ app = Client(
     bot_token=BOT_TOKEN
 )
 
+used_download_codes = set()
+
 @app.on_message(filters.command("start"))
 async def start_command(_, message):
     await message.reply_text("Welcome! use /upload command to start the process")
@@ -34,6 +36,12 @@ async def download_file(_, message):
     if await cancelled(dcode_msg):
         return
     dcode = dcode_msg.text
+
+    if dcode in used_download_codes:
+        await message.reply_text("This download code has already been used. Please try another code.")
+        return
+    else:
+        used_download_codes.add(dcode)
 
     resolution_msg = await app.ask(chat_id, "Enter the resolution (e.g., 1080p, 720p, 480p, 360p):", filters=filters.text)
     if await cancelled(resolution_msg):
@@ -52,12 +60,18 @@ async def download_file(_, message):
 
     await message.reply_text("Downloading the file... Please wait...")
 
-    # Simulate file download using requests library
+    # Simulate file download using requests library with progress bar
     download_url = f"https://goplay.pw/?dcode={dcode}&quality={resolution}&downloadmp4vid=2"
-    response = requests.get(download_url)
-    downloaded_file_path = f"downloads/{filename}.ts"
+    response = requests.get(download_url, stream=True)
+    total_size = int(response.headers.get("content-length", 0))
+    block_size = 1024  # 1 Kibibyte
+
+    progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
     with open(downloaded_file_path, "wb") as f:
-        f.write(response.content)
+        for data in response.iter_content(block_size):
+            progress_bar.update(len(data))
+            f.write(data)
+    progress_bar.close()
 
     await message.reply_text("Processing the file... Please wait...")
 
@@ -71,13 +85,18 @@ async def download_file(_, message):
     except Exception as e:
         log.error(f"Error during ffmpeg processing: {e}")
 
-    # Sending the processed file back to the user
+    # Sending the processed file back to the user with progress bar
     if os.path.exists(processed_file_path):
-        await app.send_document(
-            user_id,
-            document=processed_file_path,
-            caption="Here is your processed file!",
-        )
+        await message.reply_text("Uploading the processed file...")
+        progress_bar = tqdm(total=os.path.getsize(processed_file_path), unit="iB", unit_scale=True)
+        with open(processed_file_path, "rb") as f:
+            await app.send_document(
+                user_id,
+                document=f,
+                caption="Here is your processed file!",
+                progress_callback=lambda current, total: progress_bar.update(current),
+            )
+        progress_bar.close()
     else:
         await message.reply_text("File processing failed!")
 
