@@ -6,6 +6,7 @@ import logging
 from tqdm import tqdm
 from pyromod import listen
 from pyrogram import Client, filters
+import shutil
 
 API_ID = int(os.environ.get('API_ID'))
 API_HASH = os.environ.get('API_HASH')
@@ -27,6 +28,7 @@ used_download_codes = set()
 @app.on_message(filters.command("start"))
 async def start_command(_, message):
     await message.reply_text("Welcome! use /upload command to start the process")
+
 
 @app.on_message(filters.command("upload"))
 async def download_file(_, message):
@@ -83,15 +85,28 @@ async def download_file(_, message):
 
     await message.reply_text("Processing the file... Please wait...")
 
-    # Simulate file processing using ffmpeg-python
+    # Check if the downloaded file is valid before processing with ffmpeg
+    try:
+        with open(downloaded_file_path, "rb") as f:
+            ffmpeg.probe(f, timeout=10)
+    except ffmpeg.Error as e:
+        log.error(f"Error while probing file with FFmpeg: {e}")
+        await message.reply_text("Invalid file format. Please try again with a valid video file.")
+        os.remove(downloaded_file_path)
+        return
+
+    # Simulate file processing using ffmpeg-python with progress bar
     processed_file_path = f"downloads/{filename}.mkv"
     try:
         cmd = (
             f'ffmpeg -i "{downloaded_file_path}" -c copy "{processed_file_path}"'
         )
-        os.system(cmd)
-    except Exception as e:
+        ffmpeg.run(cmd, capture_stderr=True, input=None, capture_stdout=True)
+    except ffmpeg.Error as e:
         log.error(f"Error during ffmpeg processing: {e}")
+        await message.reply_text("File processing failed!")
+        os.remove(downloaded_file_path)
+        return
 
     # Sending the processed file back to the user with progress bar
     if os.path.exists(processed_file_path):
@@ -114,6 +129,7 @@ async def download_file(_, message):
         os.remove(processed_file_path)
 
     await message.reply_text("File processing completed successfully!")
+
 
 
 async def cancelled(msg):
