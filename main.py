@@ -3,6 +3,8 @@ import os
 import requests
 import logging
 import subprocess
+import asyncio
+import youtube_dl
 
 from pyrogram import Client, filters
 from pyrogram.types import Message
@@ -24,44 +26,49 @@ app = Client(
 )
 
 
-# Helper function to download video from Viu
-def download_viu_video(link: str) -> str:
-    # Extract the productId from the given link
-    product_id = link.split("/")[-1]
+# Helper function to download video from Viu using youtube-dl
+async def download_viu_video(link: str) -> str:
+    ydl_opts = {
+        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',  # Download the best quality mp4 video
+        'outtmpl': '%(title)s.%(ext)s',  # Output file template (filename)
+        'merge_output_format': 'mkv',  # Merge audio and video into mkv format
+        'postprocessors': [{
+            'key': 'FFmpegVideoConvertor',
+            'preferedformat': 'mp4',  # Convert the merged mkv to mp4
+        }],
+        'quiet': True,
+    }
 
-    # Use subprocess to call viurr CLI command for downloading video
-    subprocess.run(["viurr", "download", "episode", "video", product_id])
+    loop = asyncio.get_event_loop()
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        info_dict = await loop.run_in_executor(None, lambda: ydl.extract_info(link, download=True))
+        filename = ydl.prepare_filename(info_dict)
 
-    # Find the downloaded video file
-    downloaded_files = [f for f in os.listdir() if f.endswith(".mkv")]
-    if downloaded_files:
-        return downloaded_files[0]
-    else:
-        raise Exception("Video download failed.")
+    return filename
 
 
 # Handler for /start command
 @app.on_message(filters.command("start"))
-def start_command(_, message: Message):
-    message.reply_text("Hello! Send me a Viu video link and I'll download and send it back to you!")
+async def start_command(_, message: Message):
+    await message.reply_text("Hello! Send me a Viu video link and I'll download and send it back to you!")
 
 
 # Handler for any message containing a Viu video link
 @app.on_message(filters.text & filters.regex(r"https:\/\/www\.viu\.com\/.*"))
-def viu_video_link_handler(_, message: Message):
+async def viu_video_link_handler(_, message: Message):
     video_link = message.text.strip()
 
     try:
-        video_file = download_viu_video(video_link)
+        video_file = await download_viu_video(video_link)
         _, video_title = os.path.split(video_file)
 
         # Send the video file to the user
-        message.reply_video(video_file, caption=f"Here's the video: {video_title}")
+        await message.reply_video(video_file, caption=f"Here's the video: {video_title}")
 
         # Remove the downloaded video file from the server
         os.remove(video_file)
     except Exception as e:
-        message.reply_text("Sorry, I couldn't download and send the video.")
+        await message.reply_text("Sorry, I couldn't download and send the video.")
         print(e)
 
 
