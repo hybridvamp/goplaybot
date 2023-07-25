@@ -26,10 +26,9 @@ app = Client(
 )
 
 
-# Helper function to download video from Viu using youtube-dl
-async def download_viu_video(link: str) -> str:
+async def download_viu_video(link: str, quality: str, file_name: str) -> str:
     ydl_opts = {
-        'format': 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',  # Download the best quality mp4 video
+        'format': f'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4][height<={quality}]/best',  # Download the specified quality mp4 video
         'outtmpl': '%(title)s.%(ext)s',  # Output file template (filename)
         'merge_output_format': 'mkv',  # Merge audio and video into mkv format
         'postprocessors': [{
@@ -42,39 +41,42 @@ async def download_viu_video(link: str) -> str:
     loop = asyncio.get_event_loop()
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info_dict = await loop.run_in_executor(None, lambda: ydl.extract_info(link, download=True))
-        filename = ydl.prepare_filename(info_dict)
+        downloaded_file = ydl.prepare_filename(info_dict)
 
-    return filename
+    renamed_file = f"{file_name}.mp4"
+    os.rename(downloaded_file, renamed_file)
+
+    return renamed_file
 
 
-# Handler for /start command
 @app.on_message(filters.command("start"))
 async def start_command(_, message: Message):
-    await message.reply_text("Hello! Send me a Viu video link and I'll download and send it back to you!")
+    await message.reply_text("Hello! Send me a Viu video link, quality (e.g., 480p), and the desired file name "
+                              "separated by spaces, and I'll download, rename, and send it back to you!\n\n"
+                              "Example: `<link> 480p my_video`")
 
 
-# Handler for any message containing a Viu video link
-@app.on_message(filters.text & filters.regex(r"https:\/\/www\.viu\.com\/.*"))
+@app.on_message(filters.text & filters.regex(r"https:\/\/www\.viu\.com\/.*\s+\d+p\s+\S+"))
 async def viu_video_link_handler(_, message: Message):
-    video_link = message.text.strip()
+    parts = message.text.strip().split()
+    video_link, quality, file_name = parts[0], parts[1], "_".join(parts[2:])
 
     try:
-        video_file = await download_viu_video(video_link)
+        video_file = await download_viu_video(video_link, quality, file_name)
         _, video_title = os.path.split(video_file)
 
-        # Send the video file to the user
         await message.reply_video(video_file, caption=f"Here's the video: {video_title}")
 
-        # Remove the downloaded video file from the server
         os.remove(video_file)
     except Exception as e:
-        await message.reply_text("Sorry, I couldn't download and send the video.")
+        await message.reply_text(f"Sorry, I couldn't download and send the video.\nError: {e}")
         print(e)
 
 
 # Start the bot
 if __name__ == "__main__":
     app.run()
+
 
 
 
