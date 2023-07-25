@@ -75,6 +75,12 @@ async def download_file(_, message):
             f.write(data)
     progress_bar.close()
 
+    # Check if download completed successfully
+    if os.path.getsize(downloaded_file_path) < total_size:
+        await message.reply_text("Download failed. Please try again.")
+        os.remove(downloaded_file_path)
+        return
+
     await message.reply_text("Processing the file... Please wait...")
 
     # Simulate file processing using ffmpeg-python
@@ -108,6 +114,7 @@ async def download_file(_, message):
         os.remove(processed_file_path)
 
     await message.reply_text("File processing completed successfully!")
+
 
 async def cancelled(msg):
     if "/cancel" in msg.text:
