@@ -3,6 +3,8 @@
 import os
 import requests
 import logging
+import subprocess
+
 from tqdm import tqdm
 from pyromod import listen
 from pyrogram import Client, filters
@@ -29,6 +31,88 @@ used_download_codes = set()
 @app.on_message(filters.command("start"))
 async def start_command(_, message):
     await message.reply_text("Welcome! use /upload command to start the process")
+
+
+@app.on_message(filters.command("download"))
+async def download_file(_, message):
+    chat_id = message.chat.id
+
+    # Ask for the download code
+    dcode_msg = await app.ask(chat_id, "Enter the download code:", filters=filters.text)
+    dcode = dcode_msg.text.strip()
+
+    # Ask for the resolution
+    resolution_msg = await app.ask(chat_id, "Enter Resolution (Example: 1080p, 720p, 480p, 360p):", filters=filters.text)
+    resolution = resolution_msg.text.strip()
+
+    # Ask for the file format
+    format_msg = await app.ask(chat_id, "Enter File Format (mp4, mkv):", filters=filters.text)
+    format_str = format_msg.text.strip().lower()
+
+    # Ask for the filename
+    filename_msg = await app.ask(chat_id, "Enter Filename:", filters=filters.text)
+    filename = filename_msg.text.strip()
+
+    # Start downloading the video file using curl and m3u8dl
+    curl_cmd = f'Bin/curl -k -sS "https://goplay.pw/?dcode={dcode}"'
+    for line in subprocess.Popen(curl_cmd, shell=True, stdout=subprocess.PIPE).stdout:
+        key = line.decode("utf-8").strip()
+
+    if key:
+        mode = 3
+    else:
+        mode = 2
+
+    m3u8dl_cmd = f'Bin/m3u8dl "https://goplay.pw/?dcode={dcode}&quality={resolution}&downloadmp4vid={mode}" --enableDelAfterDone --saveName "{filename}"'
+    subprocess.run(m3u8dl_cmd, shell=True)
+
+    # Check if the downloaded file is valid before processing with ffmpeg
+    downloaded_file_path = f'Downloads/{filename}.ts' if format_str == "mp4" else f'Downloads/{filename}.mkv'
+    try:
+        ffmpeg_cmd = ['ffmpeg', '-i', downloaded_file_path, '-t', '10', '-f', 'null', '-']
+        subprocess.run(ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    except subprocess.CalledProcessError as e:
+        await message.reply("Invalid file format. Please try again with a valid video file.")
+        os.remove(downloaded_file_path)
+        return
+
+    # Process the video file with ffmpeg and mp4decrypt if needed
+    if format_str == "mkv":
+        srt_file_path = f'Downloads/{filename}.srt'
+        if key:
+            audio_file_path = f'Downloads/{filename}(Audio)_.aac'
+            subprocess.run(['mp4decrypt', '--key', key, f'Downloads/{filename}.ts', audio_file_path])
+        else:
+            audio_file_path = f'Downloads/{filename}(Audio).aac'
+
+        subprocess.run(['ffmpeg', '-i', downloaded_file_path, '-i', audio_file_path, '-i', srt_file_path, '-metadata', 'title=' + filename, '-c', 'copy', '-disposition:s:0', 'default', f'Downloads/{filename}.mkv'])
+
+        # Clean up temporary files
+        os.remove(downloaded_file_path)
+        os.remove(audio_file_path)
+        os.remove(srt_file_path)
+
+    else:  # Format is mp4
+        if key:
+            audio_file_path = f'Downloads/{filename}(Audio)_.aac'
+            subprocess.run(['mp4decrypt', '--key', key, f'Downloads/{filename}.ts', audio_file_path])
+        else:
+            audio_file_path = f'Downloads/{filename}(Audio).aac'
+
+        subprocess.run(['ffmpeg', '-i', downloaded_file_path, '-i', audio_file_path, '-metadata', 'title=' + filename, '-c', 'copy', f'Downloads/{filename}.mp4'])
+
+        # Clean up temporary files
+        os.remove(downloaded_file_path)
+        os.remove(audio_file_path)
+
+    await message.reply("Download and processing completed successfully.")
+
+
+@app.on_message(filters.command("cancel"))
+async def cancel_download(_, message):
+    # Implement cancellation logic if needed
+    await message.reply("Download cancelled successfully.")
+
 
 
 @app.on_message(filters.command("upload"))
