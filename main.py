@@ -2,9 +2,11 @@
 import os
 import requests
 import logging
+import subprocess
+
 from pyrogram import Client, filters
 from pyrogram.types import Message
-from viurr import inspect, download
+
 
 API_ID = int(os.environ.get('API_ID'))
 API_HASH = os.environ.get('API_HASH')
@@ -20,15 +22,22 @@ app = Client(
     api_hash=API_HASH,
     bot_token=BOT_TOKEN
 )
+
+
 # Helper function to download video from Viu
 def download_viu_video(link: str) -> str:
     # Extract the productId from the given link
     product_id = link.split("/")[-1]
 
-    # Download video in 1080p quality
-    _, _, video_file, _ = download.video(product_id, quality='1080p')
+    # Use subprocess to call viurr CLI command for downloading video
+    subprocess.run(["viurr", "download", "episode", "video", product_id])
 
-    return video_file
+    # Find the downloaded video file
+    downloaded_files = [f for f in os.listdir() if f.endswith(".mkv")]
+    if downloaded_files:
+        return downloaded_files[0]
+    else:
+        raise Exception("Video download failed.")
 
 
 # Handler for /start command
@@ -59,7 +68,6 @@ def viu_video_link_handler(_, message: Message):
 # Start the bot
 if __name__ == "__main__":
     app.run()
-
 
 
 
