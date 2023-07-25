@@ -13,6 +13,7 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN')
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
+log.setLevel(logging.ERROR)  # Setting the logging level to ERROR for detailed error messages
 
 app = Client(
     "goplaybot",
@@ -66,7 +67,8 @@ async def download_file(_, message):
     total_size = int(response.headers.get("content-length", 0))
     block_size = 1024  # 1 Kibibyte
 
-    progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True)
+    downloaded_file_path = f"downloads/{filename}.ts"
+    progress_bar = tqdm(total=total_size, unit="iB", unit_scale=True, desc="Downloading")
     with open(downloaded_file_path, "wb") as f:
         for data in response.iter_content(block_size):
             progress_bar.update(len(data))
@@ -88,7 +90,7 @@ async def download_file(_, message):
     # Sending the processed file back to the user with progress bar
     if os.path.exists(processed_file_path):
         await message.reply_text("Uploading the processed file...")
-        progress_bar = tqdm(total=os.path.getsize(processed_file_path), unit="iB", unit_scale=True)
+        progress_bar = tqdm(total=os.path.getsize(processed_file_path), unit="iB", unit_scale=True, desc="Uploading")
         with open(processed_file_path, "rb") as f:
             await app.send_document(
                 user_id,
@@ -125,4 +127,5 @@ if __name__ == "__main__":
     if not os.path.exists("downloads"):
         os.makedirs("downloads")
 
+    log.info("Bot started")
     app.run()
