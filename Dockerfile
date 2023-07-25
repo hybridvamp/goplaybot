@@ -1,15 +1,12 @@
 FROM python:3.9
 
-RUN apt-get update && apt-get install -y ffmpeg && apt-get install -y curl
-
-WORKDIR /app
-
-COPY . /app
+RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y ffmpeg && apt-get install -y curl && apt-get install -y wine 
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN mkdir downloads
 
-RUN chmod +x /app/Bin/curl /app/Bin/m3u8dl
+RUN wine /Bin/curl.exe --version
+RUN wine /Bin/m3u8dl.exe --version
 
 CMD ["python", "main.py"]
